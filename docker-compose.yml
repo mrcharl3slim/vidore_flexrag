@@ -1,0 +1,22 @@
+services:
+  app:
+    build: .
+    volumes:
+      - ./data:/app/data         # persist downloaded data and retriever index
+      - ./outputs:/app/outputs   # persist retrieval and generation results
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      - ollama
+    stdin_open: true
+    tty: true
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama  # persist pulled models
+
+volumes:
+  ollama_models:
