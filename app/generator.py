@@ -1,7 +1,10 @@
+import os
 import requests
 
+_DEFAULT_OLLAMA_URL = os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
+
 class OllamaGenerator:
-    def __init__(self, model="qwen2:latest", base_url="http://127.0.0.1:11434"):
+    def __init__(self, model="qwen2:latest", base_url=_DEFAULT_OLLAMA_URL):
         self.model = model
         self.base_url = base_url.rstrip("/")
 

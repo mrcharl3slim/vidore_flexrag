@@ -1,3 +1,4 @@
+import os
 from app.vidore_assistant import VidoreAssistant, VidoreAssistantConfig
 
 def main():
@@ -5,8 +6,8 @@ def main():
         VidoreAssistantConfig(
             retriever_path="data/processed/vidore_flexrag_retriever",
             used_indexes=["bm25", "dense"],
-            model_name="qwen2:latest",
-            ollama_base_url="http://127.0.0.1:11434",
+            model_name="qwen2.5:latest",
+            ollama_base_url=os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434"),
             top_k=3,
         )
     )

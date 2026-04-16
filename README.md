@@ -57,7 +57,67 @@ Metrics follow the ViDoRe leaderboard convention: graded NDCG using qrel relevan
 
 ---
 
-## Requirements
+## Running with Docker (recommended for teammates)
+
+### Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or Docker Engine + Compose v2)
+- ~20 GB free disk space (models + indexes + images)
+- 16 GB RAM recommended for ColPali
+
+### Quickstart
+
+```bash
+git clone <repo-url>
+cd vidore_flexrag
+
+# 1. Build the app image and start both services (app + ollama)
+docker compose up -d
+
+# 2. Pull required Ollama models (runs inside the ollama container)
+docker compose exec ollama ollama pull qwen2.5:latest   # required
+docker compose exec ollama ollama pull llava:7b          # optional: page captions
+
+# 3. Run the full pipeline
+docker compose exec app bash run_pipeline.sh
+```
+
+All output is written to `./outputs/` and all data to `./data/` on your host machine (bind-mounted). HuggingFace model weights (~6 GB for ColPali) are cached in a named Docker volume and survive image rebuilds.
+
+### Flags
+
+```bash
+docker compose exec app bash run_pipeline.sh --skip-text     # multimodal only
+docker compose exec app bash run_pipeline.sh --clip-only     # CLIP + ColPali + compare
+docker compose exec app bash run_pipeline.sh --colpali-only  # ColPali + compare only
+```
+
+### Expected runtimes
+
+| Step | Approximate time |
+|---|---|
+| Dataset download + image save | 10–30 min (network) |
+| BGE-large index build | ~5 min |
+| CLIP index build | ~5 min |
+| **ColPali index build** | **~1–3 hrs on CPU** |
+| Generation (50 queries) | ~10 min |
+| LLM judge (50 queries) | ~5 min |
+
+> ColPali is the slow step. Test with a sample first:
+> ```bash
+> docker compose exec app bash -c "PYTHONPATH=. python scripts/build_colpali_index.py --sample 50"
+> ```
+
+### Stopping
+
+```bash
+docker compose down          # stop containers, keep volumes
+docker compose down -v       # stop containers AND delete all volumes (deletes models!)
+```
+
+---
+
+## Requirements (local install)
 
 - Python 3.12
 - [Ollama](https://ollama.com) with `qwen2.5:latest` pulled
@@ -65,7 +125,7 @@ Metrics follow the ViDoRe leaderboard convention: graded NDCG using qrel relevan
 
 ---
 
-## Installation
+## Installation (local)
 
 ```bash
 git clone <repo-url>

@@ -1,9 +1,12 @@
 import json
+import os
 import time
 from pathlib import Path
 from typing import List, Dict, Any
 
 import requests
+
+_OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
 
 OUT = Path("outputs")
 
@@ -17,8 +20,8 @@ def ask_ollama_judge(
     question: str,
     prediction: str,
     references: List[str],
-    model_name: str = "qwen2:latest",
-    base_url: str = "http://127.0.0.1:11434",
+    model_name: str = "qwen2.5:latest",
+    base_url: str = _OLLAMA_BASE_URL,
 ) -> Dict[str, Any]:
     reference_block = "\n".join(f"- {r}" for r in references if r and r.strip())
 

@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 3. everything else from requirements.txt
 RUN pip install --no-cache-dir faiss-cpu
 RUN pip install --no-cache-dir git+https://github.com/ictnlp/FlexRAG.git --no-deps
+RUN pip install --no-cache-dir colpali-engine==0.3.4
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 

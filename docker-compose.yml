@@ -2,10 +2,13 @@ services:
   app:
     build: .
     volumes:
-      - ./data:/app/data         # persist downloaded data and retriever index
-      - ./outputs:/app/outputs   # persist retrieval and generation results
+      - ./data:/app/data           # persist downloaded data and retriever indexes
+      - ./outputs:/app/outputs     # persist retrieval and generation results
+      - hf_cache:/root/.cache/huggingface  # persist HuggingFace model downloads (~6 GB for ColPali)
     environment:
       - PYTHONPATH=/app
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - KMP_DUPLICATE_LIB_OK=TRUE   # suppress OpenMP duplicate-library abort (PyTorch + FAISS on Linux)
     depends_on:
       - ollama
     stdin_open: true
@@ -20,3 +23,4 @@ services:
 
 volumes:
   ollama_models:
+  hf_cache:
