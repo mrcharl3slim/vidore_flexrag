@@ -1,3 +1,13 @@
+"""
+Evaluate BGE-large retrieval results against ViDoRe qrels.
+
+Reads outputs/bge_retrieval_top10.jsonl, computes nDCG@5, nDCG@10,
+Recall@5, Recall@10, MRR@10.  Saves to outputs/bge_retrieval_metrics.json.
+
+Usage:
+    python scripts/eval_bge_retrieval.py
+"""
+
 import json
 import math
 from collections import defaultdict
@@ -6,24 +16,25 @@ from pathlib import Path
 DATA = Path("data/processed")
 OUT = Path("outputs")
 
+
 def load_jsonl(path: Path):
-    with path.open("r", encoding="utf-8") as f:
+    with path.open() as f:
         return [json.loads(line) for line in f]
+
 
 def dcg_at_k(relevances, k):
     return sum(rel / math.log2(i + 2) for i, rel in enumerate(relevances[:k]))
 
+
 def ndcg_at_k(relevances, k=10):
     ideal = sorted(relevances, reverse=True)
     ideal_dcg = dcg_at_k(ideal, k)
-    if ideal_dcg == 0:
-        return 0.0
-    return dcg_at_k(relevances, k) / ideal_dcg
+    return 0.0 if ideal_dcg == 0 else dcg_at_k(relevances, k) / ideal_dcg
+
 
 def recall_at_k(binary_rels, total_relevant, k=10):
-    if total_relevant == 0:
-        return 0.0
-    return sum(binary_rels[:k]) / total_relevant
+    return 0.0 if total_relevant == 0 else sum(binary_rels[:k]) / total_relevant
+
 
 def mrr_at_k(binary_rels, k=10):
     for idx, rel in enumerate(binary_rels[:k], start=1):
@@ -31,11 +42,11 @@ def mrr_at_k(binary_rels, k=10):
             return 1.0 / idx
     return 0.0
 
+
 def main():
     qrels = load_jsonl(DATA / "qrels.jsonl")
-    runs = load_jsonl(OUT / "flexrag_retrieval_top10.jsonl")
+    runs = load_jsonl(OUT / "bge_retrieval_top10.jsonl")
 
-    # qrel_map[query_id][doc_id] = relevance
     qrel_map = defaultdict(dict)
     for row in qrels:
         qrel_map[str(row["query_id"])][str(row["doc_id"])] = int(row["relevance"])
@@ -50,8 +61,7 @@ def main():
             continue
 
         rels_for_query = qrel_map[qid]
-        ranked_doc_ids = [str(doc_id) for doc_id, _score in run["results"]]
-
+        ranked_doc_ids = [str(doc_id) for doc_id, _ in run["results"]]
         graded_rels = [rels_for_query.get(doc_id, 0) for doc_id in ranked_doc_ids]
         binary_rels = [1 if rel > 0 else 0 for rel in graded_rels]
         total_relevant = sum(1 for v in rels_for_query.values() if v > 0)
@@ -64,7 +74,7 @@ def main():
 
     n = len(ndcgs10)
     metrics = {
-        "retriever": "FlexRAG Hybrid BM25 + Dense RRF (contriever-msmarco)",
+        "retriever": "FlexRAG Hybrid BM25 + BGE-large RRF (BAAI/bge-large-en-v1.5)",
         "modality": "text query → text corpus",
         "num_queries_evaluated": n,
         "num_queries_skipped": skipped,
@@ -76,11 +86,11 @@ def main():
     }
 
     print(json.dumps(metrics, indent=2))
-
-    with (OUT / "retrieval_metrics.json").open("w", encoding="utf-8") as f:
+    out_path = OUT / "bge_retrieval_metrics.json"
+    with out_path.open("w") as f:
         json.dump(metrics, f, indent=2)
+    print(f"\nSaved to {out_path}")
 
-    print(f"Saved {OUT / 'retrieval_metrics.json'}")
 
 if __name__ == "__main__":
     main()
