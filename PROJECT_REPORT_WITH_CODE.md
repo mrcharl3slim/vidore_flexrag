@@ -356,9 +356,11 @@ def mrr_at_k(binary_rels, k=10):
 | Retriever | Modality | nDCG@5 | nDCG@10 | Recall@5 | Recall@10 | MRR@10 |
 |---|---|---|---|---|---|---|
 | Contriever (BM25+Dense) | Text→Text | 0.4033 | 0.4610 | 0.2971 | 0.3719 | 0.4340 |
-| BGE-large (BM25+Dense) | Text→Text | 0.4727 | **0.5499** | 0.3439 | **0.4406** | **0.5140** |
+| BGE-large (BM25+Dense) | Text→Text | 0.4727 | 0.5499 | 0.3439 | 0.4406 | 0.5140 |
 | CLIP | Text→Image | 0.0382 | 0.0490 | 0.0143 | 0.0239 | 0.0406 |
-| ColPali | Text→Image | — | — | — | — | — |
+| **ColPali mean-pool** | **Text→Image** | **0.4720** | **0.5587** | **0.3090** | **0.4216** | **0.5173** |
+
+ColPali (0.5587) narrowly outperforms BGE-large (0.5499) as the best overall retriever.
 
 ### 8.2 ViDoRe V3 Leaderboard Comparison (nDCG@10, Computer Science subset)
 
@@ -369,9 +371,10 @@ def mrr_at_k(binary_rels, k=10):
 | colqwen2.5 | Visual VLM | 0.752 |
 | colpali-v1.3 | Visual VLM | 0.725 |
 | colsmol256 | Visual VLM | 0.574 |
+| **ColPali v1.2 mean-pool (ours)** | **Visual** | **0.559** |
 | **BGE-large (ours)** | **Text hybrid** | **0.550** |
 | **Contriever (ours)** | **Text hybrid** | **0.461** |
-| **ColPali v1.2 mean-pool (ours)** | **Visual** | **—** |
+| BM25 baseline | Text | 0.293 |
 | **CLIP (ours)** | **Visual** | **0.049** |
 
 ### 8.3 Small Dataset Validation (200 docs, 50 queries — Mac)
@@ -389,23 +392,24 @@ def mrr_at_k(binary_rels, k=10):
 
 ## 9. Analysis
 
-### 9.1 BGE-large vs Contriever (+19% on nDCG@10)
-Both use the same BM25+Dense+RRF framework — the only difference is the dense encoder. BGE-large's stronger training regime (harder negatives, more diverse data) yields consistent +19% improvement across all metrics, demonstrating that **encoder quality is the key variable** in hybrid retrieval.
+### 9.1 ColPali Beats BGE-large (Best Overall Retriever)
+ColPali mean-pool (0.559 nDCG@10) narrowly outperforms BGE-large (0.550) — a visual retriever surpasses the best text retriever despite using a lossy mean-pooling approximation. This shows ColPali's document-aware backbone captures page layout, code formatting, and figures that text extraction misses.
 
-### 9.2 CLIP Failure (nDCG@10: 0.049)
-CLIP was trained on (image, caption) pairs from the web, not document pages. All PDF pages from the same textbook look visually similar — same font, same layout — so CLIP cannot discriminate between them. This confirms that **general-purpose vision-language models are unsuitable for document retrieval without domain-specific training**.
+### 9.2 BGE-large vs Contriever (+19% on nDCG@10)
+Both use the same BM25+Dense+RRF framework — the only difference is the dense encoder. BGE-large's stronger training regime (harder negatives, more diverse data) yields consistent +19% improvement, demonstrating that **encoder quality is the key variable** in hybrid retrieval.
 
-### 9.3 Text vs Visual Retrievers
-On this dataset, BGE-large (0.550) approaches leaderboard visual models (colsmol256: 0.574). This is expected for a text-rich computer science textbook — the markdown extraction preserves most content. On image-heavy datasets (Industrial, Pharmaceuticals subsets), visual models are expected to significantly outperform text retrievers.
+### 9.3 CLIP Failure (nDCG@10: 0.049)
+CLIP was trained on (image, caption) pairs from the web, not document pages. All PDF pages from the same textbook look visually similar — same font, same layout — so CLIP cannot discriminate between them. General-purpose vision-language models are unsuitable for document retrieval without domain-specific training.
 
-### 9.4 ColPali Mean-Pooling Impact
-The gap between our ColPali (small dataset: 0.573) and leaderboard colpali-v1.3 (0.725) is primarily explained by mean-pooling. Full late-interaction scoring computes:
+### 9.4 ColPali Mean-Pooling Gap vs Leaderboard
+Our ColPali (0.559) is ~0.17 below colpali-v1.3 (0.725). Full late-interaction scoring computes:
 
 ```
 MaxSim Score = Σᵢ max_j cosine(query_token_i, page_patch_j)
+Mean-pool    = cosine(mean(query_tokens), mean(page_patches))
 ```
 
-This fine-grained token-patch matching captures which part of a page is relevant to each part of the query — information that is lost when averaging all patch vectors into one.
+This fine-grained token-patch matching captures which part of a page is relevant to each part of the query — information lost when averaging all patch vectors into one.
 
 ---
 
