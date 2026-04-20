@@ -1,0 +1,55 @@
+log_interval: 10000
+batch_size: 512
+index_path: ''
+query_encoder_config:
+  encoder_type: sentence_transformer
+  cohere_config: null
+  hf_config: null
+  hf_clip_config: null
+  jina_config: null
+  ollama_config: null
+  openai_config: null
+  sentence_transformer_config:
+    batch_size: 32
+    log_interval: 1000
+    model_path: sentence-transformers/all-MiniLM-L6-v2
+    device_id: []
+    trust_remote_code: false
+    task: null
+    prompt_name: null
+    prompt: null
+    prompt_dict: null
+    normalize: true
+    model_kwargs: {}
+passage_encoder_config:
+  encoder_type: sentence_transformer
+  cohere_config: null
+  hf_config: null
+  hf_clip_config: null
+  jina_config: null
+  ollama_config: null
+  openai_config: null
+  sentence_transformer_config:
+    batch_size: 32
+    log_interval: 1000
+    model_path: sentence-transformers/all-MiniLM-L6-v2
+    device_id: []
+    trust_remote_code: false
+    task: null
+    prompt_name: null
+    prompt: null
+    prompt_dict: null
+    normalize: true
+    model_kwargs: {}
+distance_function: COS
+index_type: FLAT
+n_subquantizers: 8
+n_bits: 8
+n_list: 1000
+factory_str: null
+index_train_num: -1
+n_probe: null
+device_id: []
+k_factor: 10
+polysemous_ht: 0
+efSearch: 100

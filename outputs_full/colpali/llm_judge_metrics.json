@@ -1,0 +1,5 @@
+{
+  "retriever": "colpali",
+  "num_predictions": 1290,
+  "LLMJudgeAccuracy": 0.3729
+}

@@ -1,0 +1,5 @@
+{
+  "retriever": "bge",
+  "num_predictions": 1290,
+  "LLMJudgeAccuracy": 0.3667
+}

@@ -1,3 +1,12 @@
+"""
+LLM-as-judge evaluation for generation predictions.
+
+Usage:
+    PYTHONPATH=. python scripts/eval_vidore_llm_judge.py --retriever bge
+    PYTHONPATH=. python scripts/eval_vidore_llm_judge.py --retriever colpali --out_dir outputs_full
+"""
+
+import argparse
 import json
 import os
 import time
@@ -7,8 +16,6 @@ from typing import List, Dict, Any
 import requests
 
 _OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
-
-OUT = Path("outputs")
 
 
 def load_jsonl(path: Path) -> List[Dict[str, Any]]:
@@ -53,11 +60,7 @@ Instructions:
 
     resp = requests.post(
         f"{base_url.rstrip('/')}/api/generate",
-        json={
-            "model": model_name,
-            "prompt": prompt,
-            "stream": False,
-        },
+        json={"model": model_name, "prompt": prompt, "stream": False},
         timeout=300,
     )
     resp.raise_for_status()
@@ -68,11 +71,7 @@ Instructions:
         end = raw.rfind("}")
         parsed = json.loads(raw[start:end + 1])
     except Exception:
-        parsed = {
-            "verdict": "incorrect",
-            "score": 0,
-            "reason": f"Failed to parse judge output: {raw[:300]}",
-        }
+        parsed = {"verdict": "incorrect", "score": 0, "reason": f"Parse error: {raw[:200]}"}
 
     verdict = str(parsed.get("verdict", "incorrect")).lower()
     score = 1 if parsed.get("score", 0) == 1 or verdict == "correct" else 0
@@ -86,58 +85,56 @@ Instructions:
 
 
 def main() -> None:
-    predictions_path = OUT / "predictions.jsonl"
-    predictions = load_jsonl(predictions_path)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--retriever", default="bge",
+                        choices=["contriever", "bge", "clip", "colpali"])
+    parser.add_argument("--out_dir", default="outputs_full")
+    parser.add_argument("--model", default="qwen2.5:latest")
+    args = parser.parse_args()
+
+    out_dir = Path(args.out_dir) / args.retriever
+    predictions = load_jsonl(out_dir / "predictions.jsonl")
 
     judged_rows = []
     scores = []
 
     for i, row in enumerate(predictions, start=1):
-        question = row.get("question", "")
-        prediction = row.get("prediction", "")
-        answers = row.get("answers", []) or []
-
         result = ask_ollama_judge(
-            question=question,
-            prediction=prediction,
-            references=answers,
+            question=row.get("question", ""),
+            prediction=row.get("prediction", ""),
+            references=row.get("answers", []) or [],
+            model_name=args.model,
         )
 
-        judged_row = {
-            "query_id": row.get("query_id"),
-            "question": question,
-            "prediction": prediction,
-            "answers": answers,
-            "context_doc_ids": row.get("context_doc_ids", []),
+        judged_rows.append({
+            **row,
             "judge_verdict": result["verdict"],
             "judge_score": result["score"],
             "judge_reason": result["reason"],
             "raw_judge_output": result["raw_judge_output"],
-        }
-        judged_rows.append(judged_row)
+        })
         scores.append(result["score"])
 
-        if i % 10 == 0:
-            print(f"Judged {i}/{len(predictions)} predictions")
+        if i % 50 == 0:
+            print(f"Judged {i}/{len(predictions)}")
 
-        time.sleep(0.2)
+        time.sleep(0.1)
 
     metrics = {
+        "retriever": args.retriever,
         "num_predictions": len(predictions),
-        "LLMJudgeAccuracy": sum(scores) / len(scores) if scores else 0.0,
+        "LLMJudgeAccuracy": round(sum(scores) / len(scores), 4) if scores else 0.0,
     }
 
-    print(json.dumps(metrics, indent=2, ensure_ascii=False))
+    print(json.dumps(metrics, indent=2))
 
-    with (OUT / "llm_judge_metrics.json").open("w", encoding="utf-8") as f:
-        json.dump(metrics, f, indent=2, ensure_ascii=False)
-
-    with (OUT / "llm_judge_per_example.jsonl").open("w", encoding="utf-8") as f:
+    with (out_dir / "llm_judge_metrics.json").open("w") as f:
+        json.dump(metrics, f, indent=2)
+    with (out_dir / "llm_judge_per_example.jsonl").open("w") as f:
         for row in judged_rows:
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
-    print(f"Saved {OUT / 'llm_judge_metrics.json'}")
-    print(f"Saved {OUT / 'llm_judge_per_example.jsonl'}")
+    print(f"Saved {out_dir / 'llm_judge_metrics.json'}")
 
 
 if __name__ == "__main__":

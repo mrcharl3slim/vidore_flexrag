@@ -1,0 +1,8 @@
+{
+  "retriever": "colpali",
+  "num_predictions": 1290,
+  "ExactMatch": 0.0,
+  "TokenF1": 0.0897,
+  "ROUGE-L": 0.0756,
+  "InsufficientEvidenceRate": 0.6519
+}

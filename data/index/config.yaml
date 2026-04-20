@@ -1,0 +1,39 @@
+log_interval: 100
+top_k: 10
+batch_size: 32
+query_preprocess_pipeline:
+  processor_type: []
+  length_filter_config:
+    max_tokens: null
+    min_tokens: null
+    max_chars: null
+    min_chars: null
+    max_bytes: null
+    min_bytes: null
+    tokenizer_config:
+      tokenizer_type: moses
+      hf_tokenizer_path: null
+      tiktok_tokenizer_name: null
+      lang: null
+  token_normalize_config:
+    lang: en
+    penn: true
+    norm_quote_commas: true
+    norm_numbers: true
+    pre_replace_unicode_punct: false
+    post_remove_control_chars: false
+    perl_parity: false
+  truncate_config:
+    max_chars: null
+    max_bytes: null
+    max_tokens: null
+    tokenizer_config:
+      tokenizer_type: moses
+      hf_tokenizer_path: null
+      tiktok_tokenizer_name: null
+      lang: null
+retriever_path: data/index
+indexes_merge_method: rrf
+indexes_merge_weights: null
+used_indexes: null
+rrf_base: 60

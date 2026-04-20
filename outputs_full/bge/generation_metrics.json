@@ -1,0 +1,8 @@
+{
+  "retriever": "bge",
+  "num_predictions": 1290,
+  "ExactMatch": 0.0008,
+  "TokenF1": 0.0941,
+  "ROUGE-L": 0.0815,
+  "InsufficientEvidenceRate": 0.6767
+}
